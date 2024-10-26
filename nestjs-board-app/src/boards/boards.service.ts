@@ -1,50 +1,40 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Board, BoardStatus } from './board.model';
-import { v1 as uuid } from 'uuid';
+import { Board } from './board.entity';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { BoardRepository } from './board.repository';
+import { BoardStatus } from './board-status.enum';
 
 @Injectable()
 export class BoardsService {
   constructor(private boardsRepository: BoardRepository) {}
 
-  private boards: Board[] = [];
-
-  createBoard(createBoardDto: CreateBoardDto): Board {
-    const { title, description } = createBoardDto;
-
-    const board: Board = {
-      id: uuid(),
-      title,
-      description,
-      status: BoardStatus.PUBLIC,
-    };
-
-    this.boards.push(board);
-    return board;
+  createBoard(createBoardDto: CreateBoardDto): Promise<Board> {
+    return this.boardsRepository.createBoard(createBoardDto);
   }
 
-  getAllBoards(): Board[] {
-    return this.boards;
+  getAllBoards() {
+    return this.boardsRepository.getAllBoards();
   }
 
-  getBoardById(id: string): Board {
-    const found = this.boards.find((board) => board.id === id);
-    if (!found) {
-      throw new NotFoundException(`id: ${id} 게시물을 찾을 수 없습니다`);
+  getBoardById(id: number): Promise<Board> {
+    const board = this.boardsRepository.getBoardById(id);
+
+    if (!board) {
+      throw new NotFoundException(`Can't find Board with id ${id}`);
     }
 
-    return found;
-  }
-
-  updateBoardStatus(id: string, status: BoardStatus): Board {
-    const board = this.getBoardById(id);
-    board.status = status;
     return board;
   }
 
-  deleteBoard(id: string): void {
-    const found = this.getBoardById(id);
-    this.boards = this.boards.filter((board) => board.id !== found.id);
+  updateBoard(id: number, status: BoardStatus): Promise<Board> {
+    return this.boardsRepository.updateBoardStatus(id, status);
+  }
+
+  deleteBoard(id: number): void {
+    this.boardsRepository.delete(id).then((result) => {
+      if (result.affected === 0) {
+        throw new NotFoundException(`Can't find Board with id ${id}`);
+      }
+    });
   }
 }
