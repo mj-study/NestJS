@@ -31,4 +31,8 @@ export class UserRepository extends Repository<User> {
       }
     }
   }
+
+  async findUserByUsername(username: string): Promise<User> {
+    return await this.findOneBy({ username: username });
+  }
 }
