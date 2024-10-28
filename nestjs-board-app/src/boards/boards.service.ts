@@ -17,6 +17,10 @@ export class BoardsService {
     return this.boardsRepository.getAllBoards();
   }
 
+  getAllMyBoards(user: User): Promise<Board[]> {
+    return this.boardsRepository.getAllMyBoards(user);
+  }
+
   getBoardById(id: number): Promise<Board> {
     const board = this.boardsRepository.getBoardById(id);
 
@@ -31,8 +35,8 @@ export class BoardsService {
     return this.boardsRepository.updateBoardStatus(id, status);
   }
 
-  deleteBoard(id: number): void {
-    this.boardsRepository.delete(id).then((result) => {
+  deleteBoard(id: number, user: User): void {
+    this.boardsRepository.delete({ id, user }).then((result) => {
       if (result.affected === 0) {
         throw new NotFoundException(`Can't find Board with id ${id}`);
       }
