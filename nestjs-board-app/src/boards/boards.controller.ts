@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   ParseIntPipe,
   Patch,
@@ -25,12 +26,17 @@ import { User } from '../auth/user.entity';
 export class BoardsController {
   constructor(private boardsService: BoardsService) {}
 
+  private logger = new Logger('BoardsController');
+
   @Post()
   @UsePipes(ValidationPipe)
   createBoard(
     @Body() createBoardDto: CreateBoardDto,
     @GetUser() user: User,
   ): Promise<Board> {
+    this.logger.verbose(
+      `User ${user.username} creating a new board. Payload: ${JSON.stringify(createBoardDto)}`,
+    );
     return this.boardsService.createBoard(createBoardDto, user);
   }
 
@@ -41,6 +47,7 @@ export class BoardsController {
 
   @Get('/my')
   getAllMyBoards(@GetUser() user: User): Promise<Board[]> {
+    this.logger.verbose(`User get my boards : ${user.username}`);
     return this.boardsService.getAllMyBoards(user);
   }
 
