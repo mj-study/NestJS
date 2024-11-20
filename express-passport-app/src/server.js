@@ -79,6 +79,16 @@ app.post('/login', checkNotAuthenticated, (req, res, next) => {
   })(req, res, next)
 })
 
+app.post('/logout', (req, res, next) => {
+  req.logout(function (err) {
+    if (err) {
+      return next(err);
+    }
+    res.redirect('/')
+  });
+
+})
+
 app.get('/signup', checkNotAuthenticated, (req, res) => {
   res.render('signup')
 })
