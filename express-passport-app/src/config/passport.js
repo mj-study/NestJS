@@ -1,6 +1,7 @@
 const passport = require('passport');
 const User = require("../models/users.model");
 const LocalStrategy = require('passport-local').Strategy
+const GoogleStrategy = require('passport-google-oauth20').Strategy
 
 // req.login (user)
 passport.serializeUser((user, done) => {
@@ -12,13 +13,13 @@ passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
     done(null, user);
-  } catch(error) {
+  } catch (error) {
     done(error)
   }
 })
 
 // passport local 전략 사용
-passport.use('local', new LocalStrategy({usernameField: 'email', passwordField: 'password'},
+const localStrategy = new LocalStrategy({usernameField: 'email', passwordField: 'password'},
   async (email, password, done) => {
     try {
 
@@ -48,4 +49,35 @@ passport.use('local', new LocalStrategy({usernameField: 'email', passwordField: 
       console.error(error)
       return done(error)
     }
-  }))
+  });
+
+passport.use('local', localStrategy)
+
+const googleStrategy = new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.GOOGLE_CB_URL,
+  scope: ['profile', 'email']
+}, async (accessToken, refreshToken, profile, done) => {
+
+  try {
+    const existingUser = await User.findOne({googleId: profile.id});
+
+    if (existingUser) {
+      return done(null, existingUser)
+    }
+
+    const user = new User({
+      email: profile.emails[0].value,
+      googleId: profile.id
+    });
+    const savedUser = await user.save();
+    return done(null, savedUser);
+
+  } catch (err) {
+    console.log('error: ', err);
+    return done(err);
+  }
+
+})
+passport.use('google', googleStrategy)
