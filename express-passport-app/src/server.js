@@ -7,7 +7,10 @@ const passport = require('passport');
 require('dotenv').config();
 const app = express()
 
-const cookieEncryptionKey = ['key1', 'key2']
+const cookieEncryptionKey = [
+  process.env.COOKIE_ENCRYPTION_KEY_1,
+  process.env.COOKIE_ENCRYPTION_KEY_2
+]
 
 app.use(cookieSession({
   name: 'cookie-session-name',
@@ -113,7 +116,10 @@ app.get('/auth/google/callback', passport.authenticate('google', {
   failureRedirect: '/login'
 }))
 
-const port = 4000
+const config = require('config')
+const serverConfig = config.get('server')
+
+const port = serverConfig.port
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })
