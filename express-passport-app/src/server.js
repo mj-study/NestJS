@@ -2,14 +2,23 @@ const cookieSession = require('cookie-session')
 const express = require('express')
 const mongoose = require("mongoose");
 const path = require("node:path");
-const User = require("./models/users.model");
-const passport = require('passport');
 require('dotenv').config();
-const app = express()
+const config = require('config')
+const serverConfig = config.get('server')
+require('./config/passport')
+const passport = require('passport');
 
+const User = require("./models/users.model");
+const mainRouter = require("./routes/main.router");
+const usersRouter = require("./routes/users.router");
+const {checkAuthenticated, checkNotAuthenticated} = require("./middlewares/auth");
+
+// 서버 및 key variable
+const port = serverConfig.port
+const app = express()
 const cookieEncryptionKey = [
-  process.env.COOKIE_ENCRYPTION_KEY_1,
-  process.env.COOKIE_ENCRYPTION_KEY_2
+  process.env.COOKIE_ENCRYPTION_KEY1,
+  process.env.COOKIE_ENCRYPTION_KEY2
 ]
 
 app.use(cookieSession({
@@ -34,8 +43,6 @@ app.use((req, res, next) => {
 
 app.use(passport.initialize())
 app.use(passport.session())
-require('./config/passport')
-const {checkAuthenticated, checkNotAuthenticated} = require("./middlewares/auth");
 
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
@@ -53,74 +60,10 @@ mongoose.connect(mongoURI)
     console.log(err)
   })
 
+app.use('/', mainRouter)
+app.use('/auth', usersRouter)
 app.use('/static', express.static(path.join(__dirname, 'public')))
 
-app.get('/', checkAuthenticated, (req, res) => {
-  res.render('index')
-})
-
-app.get('/login', checkNotAuthenticated, (req, res) => {
-  res.render('login')
-})
-
-app.post('/login', checkNotAuthenticated, (req, res, next) => {
-  passport.authenticate('local', (err, user, info) => {
-    if (err) {
-      return next(err);
-    }
-
-    if (!user) {
-      return res.json({msg: info});
-    }
-
-    req.logIn(user, function (err) {
-      if (err) {
-        return next(err)
-      }
-      res.redirect('/')
-    })
-  })(req, res, next)
-})
-
-app.post('/logout', (req, res, next) => {
-  req.logout(function (err) {
-    if (err) {
-      return next(err);
-    }
-    res.redirect('/')
-  });
-
-})
-
-app.get('/signup', checkNotAuthenticated, (req, res) => {
-  res.render('signup')
-})
-
-app.post('/signup', async (req, res) => {
-  // user 객체 생성
-  const user = new User(req.body);
-  try {
-    // user 컬렉션 유저를 저장
-    await user.save();
-    return res.status(200).json({
-      success: true,
-    })
-  } catch (error) {
-    console.error(error)
-  }
-})
-
-app.get('/auth/google', passport.authenticate('google'))
-app.get('/auth/google/callback', passport.authenticate('google', {
-  successReturnToOrRedirect: '/',
-  failureRedirect: '/login'
-}))
-
-const config = require('config')
-const serverConfig = config.get('server')
-
-const port = serverConfig.port
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })
-
